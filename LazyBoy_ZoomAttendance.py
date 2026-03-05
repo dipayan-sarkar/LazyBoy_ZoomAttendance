@@ -187,7 +187,7 @@ def process(attendee_path, chat_path=None):
             chatDf.to_excel(file, sheet_name="Important Links", index=False)
 
     output_buffer.seek(0)
-    return output_buffer, topicName, img_data
+    return output_buffer, topicName
 
 
 # ─── Streamlit UI ─────────────────────────────────────────────────────────────
@@ -215,12 +215,15 @@ if st.button("Generate Report", type="primary"):
             chat_path = save_upload(chat_file) if chat_file else None
 
             try:
-                output_buffer, topicName, img_data = process(attendee_path, chat_path)
+                output_buffer, topicName = process(attendee_path, chat_path)
 
                 st.success("✅ Report generated successfully!")
 
+                summary_df = pd.read_excel(output_buffer, sheet_name=topicName[:30])
+                output_buffer.seek(0)
+
                 st.subheader("📋 Summary")
-                st.dataframe(Summary, use_container_width=True, hide_index=True)
+                st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
                 st.download_button(
                     label="⬇️ Download Excel Report",
