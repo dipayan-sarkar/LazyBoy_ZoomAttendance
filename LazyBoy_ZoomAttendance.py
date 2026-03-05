@@ -219,7 +219,8 @@ if st.button("Generate Report", type="primary"):
 
                 st.success("✅ Report generated successfully!")
 
-                st.image(img_data, caption="Time-Attendance Plot", use_container_width=True)
+                st.subheader("📋 Summary")
+                st.dataframe(Summary, use_container_width=True, hide_index=True)
 
                 st.download_button(
                     label="⬇️ Download Excel Report",
