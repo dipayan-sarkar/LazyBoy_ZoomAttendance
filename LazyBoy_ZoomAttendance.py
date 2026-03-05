@@ -64,9 +64,7 @@ def save_upload(uploaded_file):
     return tmp.name
 
 
-def process(attendee_path, chat_path=None):
-    Interval = 15
-
+def process(attendee_path, chat_path=None, Interval=15):
     # ── Read attendee CSV (skip bad header rows) ──────────────────────────────
     cnt = 0
     attendance = None
@@ -198,6 +196,9 @@ st.caption("Upload your Zoom attendee sheet to generate an insights report.")
 
 attendee_file = st.file_uploader("Upload Attendee Sheet (.csv)", type=["csv"])
 
+use_10min = st.checkbox("Check for 10 minutes interval, ideal for intro")
+Interval = 10 if use_10min else 15
+
 include_chat = st.checkbox("Include chat file for link extraction")
 
 chat_file = None
@@ -215,7 +216,7 @@ if st.button("Generate Report", type="primary"):
             chat_path = save_upload(chat_file) if chat_file else None
 
             try:
-                output_buffer, topicName = process(attendee_path, chat_path)
+                output_buffer, topicName = process(attendee_path, chat_path, Interval)
 
                 st.success("✅ Report generated successfully!")
 
