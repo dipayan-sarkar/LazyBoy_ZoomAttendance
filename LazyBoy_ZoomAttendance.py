@@ -247,7 +247,7 @@ if st.button("Generate Report", type="primary"):
                 chat_df = pd.read_excel(output_buffer, sheet_name="Important Links")
                 output_buffer.seek(0)
                 
-                st.subheader(f"📋 {topicName}")
+                #st.subheader(f"📋 {topicName}")
                 st.code(topicName, language=None)
                 
                 st.dataframe(summary_df, use_container_width=True, hide_index=True)
