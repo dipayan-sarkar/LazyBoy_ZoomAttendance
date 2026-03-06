@@ -229,7 +229,7 @@ if st.button("Generate Report", type="primary"):
         st.error("Please upload a chat file or uncheck the option.")
     else:
         attendee_path = None
-        chat_paths = []
+        chat_path = None
         
         with st.spinner("Generating insights…"):
             try:
