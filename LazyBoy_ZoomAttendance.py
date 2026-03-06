@@ -180,6 +180,8 @@ def process(attendee_path, chat_path=[], Interval=15):
         chatDf = chatDf[chatDf["Comments"].str.contains(r'^(https://)', regex=True)]
         chatDf = chatDf.drop_duplicates(subset= "Comments")
         chatDf = chatDf[["Time","Comments" ]]
+        chatDf["Time"] = pd.to_datetime(chatDf["Time"]).dt.strftime("%I:%M:%S %p").astype(str)
+        
         chatDf.sort_values(by="Time", ascending=True, inplace=True)
 
     # ── Write output Excel to BytesIO ─────────────────────────────────────────
