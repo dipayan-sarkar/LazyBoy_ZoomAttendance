@@ -64,7 +64,7 @@ def save_upload(uploaded_file):
     return tmp.name
 
 
-def process(attendee_path, chat_path=None, Interval=15):
+def process(attendee_path, chat_path=[], Interval=15):
     # ── Read attendee CSV (skip bad header rows) ──────────────────────────────
     cnt = 0
     attendance = None
@@ -149,28 +149,38 @@ def process(attendee_path, chat_path=None, Interval=15):
 
     # ── Chat links (optional) ─────────────────────────────────────────────────
     chatDf = None
-    if chat_path:
-        chatContents = readFile(chat_path)
-        lines = []
-        for chatLine in chatContents:
-            if (chatLine.find(f"From {mentorName}") != -1 or
-                    chatLine.find("From Team ") != -1 or
-                    chatLine.find("From Anushka ") != -1):
-                lines.append(chatContents.index(chatLine) + 1)
 
-        chatLinks = set(
-            chatContents[line].replace('"', '').strip()
-            for line in lines
-            if chatContents[line].find("://") != -1
-        )
-        if chatLinks:
-            chatDf = pd.DataFrame(columns=["Links"], data=chatLinks)["Links"].str.split(r" \r\t\r\t", expand=True)
-            if len(chatDf.columns) > 1:
-                chatDf = pd.concat(
-                    [chatDf.iloc[:, [0]]] + [chatDf.iloc[:, i].dropna() for i in chatDf.columns[1:]],
-                    axis=0
-                ).drop_duplicates().dropna()
-                chatDf.rename(columns={0: "Links"}, inplace=True)
+    if len(chat_path) != 0:
+        chats = []
+        for filename in chat_path:
+            with open(filename, "rb+") as f:
+                chats.extend(f.readlines())
+
+        data = pd.DataFrame(columns=["TimeStamp", "Comments"])
+        for comments in chats:
+            ValidComment = comments.decode("utf-8")
+            if ValidComment.find("panelists:") > -1 or ValidComment.find(" Everyone:") > -1 or ValidComment.find("(direct message)") > -1:
+                data.loc[len(data), "TimeStamp"] = ValidComment
+            else:
+                data.loc[len(data)-1, "Comments"] = ValidComment
+
+        data["Time"] = data.TimeStamp.str.split(" ", n=1, expand=True)[0]
+        data["Info"] = data.TimeStamp.str.split(" ", n=1, expand=True)[1]
+        data["From"] = data["Info"].str.split(" to ", n=1, expand=True)[0]
+        data["To"]  = data["Info"].str.split(" to ", n=1, expand=True)[1]
+        data["From"] = data["From"].str.replace("From", "").str.strip()
+        data["To"] = data["To"].str.replace(":", "").str.strip()
+        data["Comments"] = data["Comments"].str.strip()
+        data["To"] = data["To"].apply(lambda x: x.replace(", Hosts and panelists", "").replace(", host and panelists", "") if x.find(",") > -1 else x )
+        data = data.loc[:, ["Time", "From", "To", "Comments"]]
+
+        chatDf = data[(data["From"].str.lower().str.contains("team be10x") | data["From"].str.lower().str.contains("anushka")) \
+                    & data["Comments"].str.contains("://")]
+
+        chatDf = chatDf[chatDf["Comments"].str.contains(r'^(https://)', regex=True)]
+        chatDf = chatDf.drop_duplicates(subset= "Comments")
+        chatDf = chatDf[["Time","Comments" ]]
+        chatDf.sort_values(by="Time", ascending=True, inplace=True)
 
     # ── Write output Excel to BytesIO ─────────────────────────────────────────
     output_buffer = BytesIO()
@@ -208,7 +218,7 @@ include_chat = st.checkbox("Include chat file for link extraction.")
 
 chat_file = None
 if include_chat:
-    chat_file = st.file_uploader("Upload Chat File (.csv / .txt)", type=["csv", "txt"])
+    chat_file = st.file_uploader("Upload Chat File (.txt)", type=["txt"], accept_multiple_files=True)
 
 if st.button("Generate Report", type="primary"):
     if attendee_file is None:
@@ -216,21 +226,31 @@ if st.button("Generate Report", type="primary"):
     elif include_chat and chat_file is None:
         st.error("Please upload a chat file or uncheck the option.")
     else:
+        attendee_path = None
+        chat_path = []
+        
         with st.spinner("Generating insights…"):
-            attendee_path = save_upload(attendee_file)
-            chat_path = save_upload(chat_file) if chat_file else None
-
             try:
-                output_buffer, topicName = process(attendee_path, chat_path, Interval)
+                attendee_path = save_upload(attendee_file)
+                if len(chat_file)>0:
+                    chat_paths = [save_upload(cf) for cf in chat_file]
+            
+                output_buffer, topicName = process(attendee_path, chat_paths if len(chat_paths)>0 else [], Interval)
 
                 st.success("✅ Report generated successfully!")
 
                 summary_df = pd.read_excel(output_buffer, sheet_name=topicName[:30])
                 output_buffer.seek(0)
 
+                chat_df = pd.read_excel(output_buffer, sheet_name="Important Links")
+                output_buffer.seek(0)
+                
                 st.subheader(f"📋 {topicName}")
                 st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
+                st.subheader("📋 Chat Links")
+                st.dataframe(chat_df, use_container_width=True, hide_index=True)
+                
                 st.download_button(
                     label="⬇️ Download Excel Report",
                     data=output_buffer,
@@ -243,5 +263,6 @@ if st.button("Generate Report", type="primary"):
                 # Clean up temp files
                 if os.path.exists(attendee_path):
                     os.remove(attendee_path)
-                if chat_path and os.path.exists(chat_path):
-                    os.remove(chat_path)
+                for cp in chat_paths:
+                    if os.path.exists(cp):
+                        os.remove(cp)
