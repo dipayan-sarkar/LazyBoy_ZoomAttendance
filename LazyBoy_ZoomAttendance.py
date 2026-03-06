@@ -226,7 +226,7 @@ if st.button("Generate Report", type="primary"):
                 summary_df = pd.read_excel(output_buffer, sheet_name=topicName[:30])
                 output_buffer.seek(0)
 
-                st.subheader("📋 Summary")
+                st.subheader(f"📋 {topicName}")
                 st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
                 st.download_button(
