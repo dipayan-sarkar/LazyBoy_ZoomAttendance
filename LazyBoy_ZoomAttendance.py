@@ -229,7 +229,7 @@ if st.button("Generate Report", type="primary"):
         st.error("Please upload a chat file or uncheck the option.")
     else:
         attendee_path = None
-        chat_path = []
+        chat_paths = []
         
         with st.spinner("Generating insights…"):
             try:
@@ -267,7 +267,7 @@ if st.button("Generate Report", type="primary"):
                 # Clean up temp files
                 if os.path.exists(attendee_path):
                     os.remove(attendee_path)
-                if len(chat_paths)>0:
+                if len(chat_paths) != 0:
                     for cp in chat_paths:
                         if os.path.exists(cp):
                             os.remove(cp)
