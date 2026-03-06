@@ -267,6 +267,7 @@ if st.button("Generate Report", type="primary"):
                 # Clean up temp files
                 if os.path.exists(attendee_path):
                     os.remove(attendee_path)
-                for cp in chat_paths:
-                    if os.path.exists(cp):
-                        os.remove(cp)
+                if len(chat_paths)>0:
+                    for cp in chat_paths:
+                        if os.path.exists(cp):
+                            os.remove(cp)
