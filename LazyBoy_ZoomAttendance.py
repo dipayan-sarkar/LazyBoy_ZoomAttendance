@@ -229,22 +229,19 @@ if st.button("Generate Report", type="primary"):
         st.error("Please upload a chat file or uncheck the option.")
     else:
         attendee_path = None
-        chat_path = None
+        chat_paths = []
         
         with st.spinner("Generating insights…"):
             try:
                 attendee_path = save_upload(attendee_file)
-                if len(chat_file)>0:
+                if chat_file is not None :
                     chat_paths = [save_upload(cf) for cf in chat_file]
             
-                output_buffer, topicName = process(attendee_path, chat_paths if len(chat_paths)>0 else [], Interval)
+                output_buffer, topicName = process(attendee_path, chat_paths if len(chat_paths) > 0 else [], Interval)
 
                 st.success("✅ Report generated successfully!")
 
                 summary_df = pd.read_excel(output_buffer, sheet_name=topicName[:30])
-                output_buffer.seek(0)
-
-                chat_df = pd.read_excel(output_buffer, sheet_name="Important Links")
                 output_buffer.seek(0)
                 
                 #st.subheader(f"📋 {topicName}")
@@ -252,8 +249,11 @@ if st.button("Generate Report", type="primary"):
                 
                 st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
-                st.subheader("📋 Chat Links")
-                st.dataframe(chat_df, use_container_width=True, hide_index=True)
+                if chat_file is not None :
+                    chat_df = pd.read_excel(output_buffer, sheet_name="Important Links")
+                    output_buffer.seek(0)
+                    st.subheader("📋 Chat Links")
+                    st.dataframe(chat_df, use_container_width=True, hide_index=True)
                 
                 st.download_button(
                     label="⬇️ Download Excel Report",
