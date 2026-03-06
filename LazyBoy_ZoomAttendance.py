@@ -248,6 +248,8 @@ if st.button("Generate Report", type="primary"):
                 output_buffer.seek(0)
                 
                 st.subheader(f"📋 {topicName}")
+                st.code(topicName, language=None)
+                
                 st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
                 st.subheader("📋 Chat Links")
