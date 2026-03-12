@@ -2,10 +2,12 @@ from datetime import *
 import pandas as pd
 import os
 import re
-import matplotlib.pyplot as plt
 from io import BytesIO
 import streamlit as st
 import tempfile
+import altair as alt
+import vl_convert as vlc
+from io import BytesIO
 
 # ─── Helpers (unchanged logic) ───────────────────────────────────────────────
 
@@ -25,8 +27,7 @@ def readFile(filePath):
     contents = [i.decode("utf-8").strip() for i in contents]
     return contents
 
-
-def createGraph(df, attendanceDf):
+def createGraphs(df, attendanceDf):
     fig, ax = plt.subplots()
     ax.plot(df["Time"], df["Attendance"], label="Line")
     ax.set_title("Time-Attendance Plot")
@@ -53,7 +54,59 @@ def createGraph(df, attendanceDf):
     plt.close(fig)
     return img_data
 
+def createGraph(df, attendanceDf, Graph):
+    # Convert date to string to avoid JSON serialization error
+    y_max = attendanceDf["Attendance"].max()
+    x_max = attendanceDf[attendanceDf["Attendance"] == y_max]["Time"].iloc[0]
+    peak_df = pd.DataFrame({"Time": [x_max], "Attendance": [y_max]})
 
+    # Line — based on attendanceDf
+    line = alt.Chart(attendanceDf.astype(str)).mark_line().encode(
+        x=alt.X("Time:O", sort=None, 
+                axis=alt.Axis(
+                    labelAngle=-45,
+                    values=Graph["Time"].tolist()  # ← ticks from Graph["Time"] only
+                )),
+        y=alt.Y("Attendance:Q")
+    )
+
+    # Peak point
+    peak_point = alt.Chart(peak_df).mark_point(
+        color="red", size=80, filled=True
+    ).encode(
+        x=alt.X("Time:O", sort=None),
+        y=alt.Y("Attendance:Q")
+    )
+
+    # Peak annotation
+    peak_annotation = alt.Chart(peak_df).mark_text(
+        color="red",
+        dx=10,
+        dy=-15,
+        align="left",
+        fontSize=12
+    ).encode(
+        x=alt.X("Time:O", sort=None),
+        y=alt.Y("Attendance:Q"),
+        text=alt.value(f"Peak ({x_max}, {y_max})")
+    )
+
+    chart = (line + peak_point + peak_annotation).properties(
+        title="Time-Attendance Plot",
+        width=600,
+        height=400
+    )
+
+    # Streamlit native display
+    st.altair_chart(chart, use_container_width=True)
+
+    # Export to PNG for Excel
+    png_bytes = vlc.vegalite_to_png(chart.to_json())
+    img_data = BytesIO(png_bytes)
+    img_data.seek(0)
+
+    return img_data
+    
 def save_upload(uploaded_file):
     """Save a Streamlit UploadedFile to a temp file and return the path."""
     suffix = os.path.splitext(uploaded_file.name)[1]
