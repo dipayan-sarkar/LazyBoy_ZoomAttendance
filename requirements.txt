@@ -1,6 +1,6 @@
 streamlit
 pandas
-matplotlib
 xlsxwriter
 openpyxl
-tqdm
+vl_convert
+altair
