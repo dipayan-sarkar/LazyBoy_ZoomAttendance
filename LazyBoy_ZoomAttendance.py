@@ -181,7 +181,9 @@ def process(attendee_path, chat_path=[], Interval=15):
 
     Summary["Date"] = Summary["Date"].astype(str)
     Summary["Time"] = pd.to_datetime(Summary["Time"]).dt.strftime("%I:%M %p").astype(str)
-    img_data = createGraph(Graph, attendanceDf)
+    
+    df = attendanceDf
+    img_data = createGraph(df, attendanceDf, Graph)
 
     # ── Extract topic & panelist from raw file ────────────────────────────────
     contents = readFile(attendee_path)
