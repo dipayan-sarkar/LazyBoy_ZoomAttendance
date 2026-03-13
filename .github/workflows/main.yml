@@ -17,16 +17,15 @@ jobs:
 
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             --max-time 60 \
-            --retry 3 \
-            --retry-delay 10 \
-            --retry-all-errors \
+            --max-redirs 10 \
             -L \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36" \
             "$APP_URL")
 
           echo "HTTP Response Code: $RESPONSE"
 
-          if [ "$RESPONSE" -eq 200 ] || [ "$RESPONSE" -eq 302 ] || [ "$RESPONSE" -eq 301 ]; then
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 400 ]; then
             echo "✅ App pinged successfully! HTTP status: $RESPONSE"
           else
-            echo "⚠️ Received HTTP status: $RESPONSE — app may be starting up, not treating as failure"
+            echo "ℹ️ App responded with HTTP status: $RESPONSE — may be waking up"
           fi
