@@ -10,22 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
       - name: Ping Streamlit App
         run: |
-          APP_URL="https://lazyboyzoomattendance.streamlit.app/"
-          echo "Pinging Streamlit app at: $APP_URL"
+          python3 - <<'EOF'
+          import requests
 
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 60 \
-            --max-redirs 10 \
-            -L \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36" \
-            "$APP_URL")
+          url = "https://lazyboyzoomattendance.streamlit.app/"
 
-          echo "HTTP Response Code: $RESPONSE"
+          headers = {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.5",
+              "Accept-Encoding": "gzip, deflate, br",
+              "Connection": "keep-alive",
+          }
 
-          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 400 ]; then
-            echo "✅ App pinged successfully! HTTP status: $RESPONSE"
-          else
-            echo "ℹ️ App responded with HTTP status: $RESPONSE — may be waking up"
-          fi
+          try:
+              response = requests.get(url, headers=headers, timeout=60, allow_redirects=True)
+              print(f"✅ App pinged! HTTP status: {response.status_code}")
+          except requests.exceptions.ConnectionError:
+              print("ℹ️ App is waking up from sleep — ping sent successfully")
+          except requests.exceptions.Timeout:
+              print("ℹ️ App timed out — it is likely waking up from sleep")
+          except Exception as e:
+              print(f"ℹ️ Response: {e}")
+          EOF
