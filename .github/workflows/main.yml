@@ -20,11 +20,6 @@ jobs:
             echo "⚠️ Unexpected HTTP status: $RESPONSE"
             exit 1
           fi
-```
-
----
-
-### Step 4: Commit the File
 1. Scroll down to the **"Commit new file"** section
 2. In the commit message box, type something like:
 ```
