@@ -8,15 +8,25 @@ on:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
+
     steps:
       - name: Ping Streamlit App
         run: |
           APP_URL="https://lazyboyzoomattendance.streamlit.app/"
           echo "Pinging Streamlit app at: $APP_URL"
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$APP_URL")
-          if [ "$RESPONSE" -eq 200 ]; then
-            echo "✅ App is alive! HTTP status: $RESPONSE"
+
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            -L \
+            "$APP_URL")
+
+          echo "HTTP Response Code: $RESPONSE"
+
+          if [ "$RESPONSE" -eq 200 ] || [ "$RESPONSE" -eq 302 ] || [ "$RESPONSE" -eq 301 ]; then
+            echo "✅ App pinged successfully! HTTP status: $RESPONSE"
           else
-            echo "⚠️ Unexpected HTTP status: $RESPONSE"
-            exit 1
+            echo "⚠️ Received HTTP status: $RESPONSE — app may be starting up, not treating as failure"
           fi
