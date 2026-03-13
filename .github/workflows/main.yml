@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Ping Streamlit App
         run: |
-          APP_URL="https://lazyboyzoomattendance.streamlit.app/"
+          APP_URL="https://lazyboyzoomattendance.streamlit.app"
           echo "Pinging Streamlit app at: $APP_URL"
 
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
